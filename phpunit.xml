@@ -1,0 +1,10 @@
+<phpunit
+        bootstrap="test/bootstrap.php"
+        colors="true"
+        verbose="true">
+    <testsuites>
+        <testsuite name="services">
+            <file>test/BaiduBce/Services/Bos/BosClientTest.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>
