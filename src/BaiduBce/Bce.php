@@ -19,7 +19,7 @@ namespace BaiduBce;
 
 class Bce
 {
-    const SDK_VERSION = '0.8.0';
+    const SDK_VERSION = '0.8.5';
     const DEFAULT_SERVICE_DOMAIN = 'baidubce.com';
     const URL_PREFIX = '/v1';
     const DEFAULT_ENCODING = 'UTF-8';

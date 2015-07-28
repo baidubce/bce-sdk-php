@@ -65,14 +65,6 @@ class BceV1Signer implements SignerInterface
             $expirationInSeconds = SignOptions::DEFAULT_EXPIRATION_IN_SECONDS;
         } else {
             $expirationInSeconds = $options[SignOptions::EXPIRATION_IN_SECONDS];
-            if ($expirationInSeconds < SignOptions::MIN_EXPIRATION_IN_SECONDS
-                || $expirationInSeconds > SignOptions::MAX_EXPIRATION_IN_SECONDS
-            ) {
-                throw new \InvalidArgumentException(
-                    "Invalid expirationInSeconds, expected in range "
-                    . "[300, 129600], actual $expirationInSeconds"
-                );
-            }
         }
 
         $accessKeyId = $credentials['ak'];
@@ -104,19 +96,16 @@ class BceV1Signer implements SignerInterface
         if (isset($options[SignOptions::HEADERS_TO_SIGN])) {
             $headersToSign = $options[SignOptions::HEADERS_TO_SIGN];
         }
-
         // Formatting the headers from the request based on signing protocol.
         $canonicalHeader = BceV1Signer::getCanonicalHeaders(
             BceV1Signer::getHeadersToSign($headers, $headersToSign)
         );
-
         $signedHeaders = '';
         if ($headersToSign !== null) {
             $signedHeaders = strtolower(
                 trim(implode(";", array_keys($headersToSign)))
             );
         }
-
         $canonicalRequest = "$httpMethod\n$canonicalURI\n"
             . "$canonicalQueryString\n$canonicalHeader";
 
@@ -190,7 +179,7 @@ class BceV1Signer implements SignerInterface
         foreach ($headers as $k => $v) {
             if (trim((string) $v) !== '') {
                 if ($headersToSign !== null) {
-                    if (in_array($k, $headersToSign)) {
+                    if (in_array(strtolower(trim($k)), $headersToSign)) {
                         $ret[$k] = $v;
                     }
                 } else {

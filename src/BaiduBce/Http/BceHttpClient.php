@@ -116,7 +116,8 @@ class BceHttpClient
         array $headers,
         array $params,
         SignerInterface $signer,
-        $outputStream = null
+        $outputStream = null,
+        $options = array()
     ) {
         $headers[HttpHeaders::USER_AGENT] =
             sprintf(
@@ -158,12 +159,14 @@ class BceHttpClient
             $entityBody = $body;
         }
 
+
         $headers[HttpHeaders::AUTHORIZATION] = $signer->sign(
             $config[BceClientConfigOptions::CREDENTIALS],
             $httpMethod,
             $path,
             $headers,
-            $params
+            $params,
+            $options
         );
 
         if (LogFactory::isDebugEnabled()) {

@@ -72,10 +72,6 @@ class BceBaseClient
     protected static function convertHttpHeadersToMetadata(array $headers)
     {
         $metadata = array();
-        if (isset($headers[HttpHeaders::CONTENT_DISPOSITION])) {
-            $metadata[BosOptions::CONTENT_DISPOSITION] =
-                $headers[HttpHeaders::CONTENT_DISPOSITION];
-        }
         if (isset($headers[HttpHeaders::CONTENT_TYPE])) {
             $metadata[BosOptions::CONTENT_TYPE] =
                 $headers[HttpHeaders::CONTENT_TYPE];
@@ -83,10 +79,6 @@ class BceBaseClient
         if (isset($headers[HttpHeaders::CONTENT_LENGTH])) {
             $metadata[BosOptions::CONTENT_LENGTH] =
                 (int) $headers[HttpHeaders::CONTENT_LENGTH];
-        }
-        if (isset($headers[HttpHeaders::CONTENT_ENCODING])) {
-            $metadata[BosOptions::CONTENT_ENCODING] =
-                $headers[HttpHeaders::CONTENT_ENCODING];
         }
         if (isset($headers[HttpHeaders::CONTENT_MD5])) {
             $metadata[BosOptions::CONTENT_MD5] =

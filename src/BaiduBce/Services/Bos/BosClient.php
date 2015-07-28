@@ -40,6 +40,7 @@ class BosClient extends BceBaseClient
     const MAX_USER_METADATA_SIZE = 2048;          // 2 * 1024
     const MIN_PART_NUMBER = 1;
     const MAX_PART_NUMBER = 10000;
+    const BOS_URL_PREFIX = "/";
 
     /**
      * @var \BaiduBce\Auth\SignerInterface
@@ -87,7 +88,7 @@ class BosClient extends BceBaseClient
         if(is_null($config)) {
             $config = $this->config;
         } else {
-            $config = array_merge($config, $this->config);
+            $config = array_merge($this->config, $config);
         }
         if(is_null($params)) {
             $params = array();
@@ -1231,7 +1232,7 @@ class BosClient extends BceBaseClient
      */
     private function getPath($bucketName = null, $key = null)
     {
-        return HttpUtils::appendUri(Bce::URL_PREFIX, $bucketName, $key);
+        return HttpUtils::appendUri(self::BOS_URL_PREFIX, $bucketName, $key);
     }
 
     /**
