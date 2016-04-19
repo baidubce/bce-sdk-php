@@ -358,6 +358,30 @@ class BosClient extends BceBaseClient
     }
 
     /**
+     * Get Region of bucket
+     *
+     * @param string $bucketName The bucket name.
+     * @param mixed $options The optional bce configuration, which will overwrite the
+     *   default configuration that was passed while creating BosClient instance.
+     * @return mixed
+     */
+    public function getBucketLocation($bucketName, $options = array())
+    {
+        list($config) = $this->parseOptions($options, BosOptions::CONFIG);
+        $response = $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                BosOptions::CONFIG => $config,
+                'bucket_name' => $bucketName,
+                'params' => array(
+                    BosOptions::LOCATION => '',
+                ),
+            )
+        );
+        return $response->locationConstraint;
+    }
+
+    /**
      * Create object and put content of string to the object
      *
      * @param string $bucketName The bucket name.

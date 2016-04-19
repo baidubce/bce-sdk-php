@@ -24,7 +24,6 @@ use BaiduBce\Http\BceHttpClient;
 use BaiduBce\Http\HttpContentTypes;
 use BaiduBce\Http\HttpHeaders;
 use BaiduBce\Http\HttpMethod;
-use BaiduBce\Services\Media\MediaOptions;
 
 class MediaClient extends BceBaseClient
 {
@@ -49,6 +48,9 @@ class MediaClient extends BceBaseClient
      * Get the specific pipeline information
      *
      * @param string $pipelineName The pipeline name
+     * @param string $jobStatus The jobStatus of the job, not filter if null
+     * @param string $begin The createTime should be later than or equals with begin, not check if null
+     * @param string $end The createTime should be earlier than or equals with end, not check if null
      * @param array $options Supported options:
      *      {
      *          config: The optional bce configuration, which will overwrite the
@@ -57,7 +59,7 @@ class MediaClient extends BceBaseClient
      * @return mixed
      * @throws BceClientException
      */
-    public function listJobs($pipelineName, $options = array())
+    public function listJobs($pipelineName, $jobStatus = null, $begin = null, $end = null, $options = array())
     {
         list($config) = $this->parseOptions($options, 'config');
         $params = array();
@@ -68,7 +70,15 @@ class MediaClient extends BceBaseClient
             throw new BceClientException("The parameter pipelineName " 
                 ."should NOT be null or empty string");
         }
-
+        if (!empty($jobStatus)) {
+            $params['jobStatus'] = $jobStatus;
+        }
+        if (!empty($begin)) {
+            $params['begin'] = $begin;
+        }
+        if (!empty($end)) {
+            $params['end'] = $end;
+        }
         return $this->sendRequest(
             HttpMethod::GET,
             array(
@@ -679,6 +689,9 @@ class MediaClient extends BceBaseClient
      * Get thumbnail jobs
      * 
      * @param string $pipelineName The pipeline name
+     * @param string $jobStatus The jobStatus of the thumbnail job, not filter if null
+     * @param string $begin The createTime should be later than or equals with begin, not check if null
+     * @param string $end The createTime should be earlier than or equals with end, not check if null
      * @param array $options Supported options:
      *      {
      *          config: The optional bce configuration, which will overwrite the
@@ -688,7 +701,10 @@ class MediaClient extends BceBaseClient
      * @throws BceClientException
      */
     public function listThumbnailJobsByPipelineName(
-        $pipelineName, 
+        $pipelineName,
+        $jobStatus = null,
+        $begin = null,
+        $end = null,
         $options = array()
     ) {
         list($config) = $this->parseOptions($options, 'config');
@@ -700,7 +716,15 @@ class MediaClient extends BceBaseClient
             throw new BceClientException("The parameter pipelineName " 
                 ."should NOT be null or empty string");
         }
-
+        if (!empty($jobStatus)) {
+            $params['jobStatus'] = $jobStatus;
+        }
+        if (!empty($begin)) {
+            $params['begin'] = $begin;
+        }
+        if (!empty($end)) {
+            $params['end'] = $end;
+        }
         return $this->sendRequest(
             HttpMethod::GET,
             array(

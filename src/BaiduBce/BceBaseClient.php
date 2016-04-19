@@ -54,12 +54,18 @@ class BceBaseClient
      */
     protected static function parseJsonResult($jsonString)
     {
+        $result = null;
+        if (strcmp($jsonString, "") == 0) {
+            return new \stdClass();
+        }
+
         $result = json_decode($jsonString);
         if (JSON_ERROR_NONE !== json_last_error()) {
             throw new BceClientException(
                 'Invalid json in response body: ' . json_last_error_msg()
             );
         }
+
         if ($result === null) {
             $result = new \stdClass();
         }

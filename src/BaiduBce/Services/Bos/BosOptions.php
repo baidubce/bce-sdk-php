@@ -53,6 +53,7 @@ class BosOptions
     const LIST_MAX_UPLOAD_SIZE = 'listMaxUploadSize';
 
     const ACL = 'acl';
+    const LOCATION = 'location';
 
     const UPLOAD_ID = 'uploadId';
     const PART_NUM = 'partNum';

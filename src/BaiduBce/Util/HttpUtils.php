@@ -50,24 +50,28 @@ class HttpUtils
     public static function parseEndpointFromConfig(array $config)
     {
         $endpoint = $config[BceClientConfigOptions::ENDPOINT];
-        $parsed_endpoint = parse_url($endpoint);
-        if (isset($parsed_endpoint['scheme'])) {
-            $scheme = strtolower($parsed_endpoint['scheme']);
-            if ($scheme !== 'http' && $scheme !== 'https') {
+
+        // no scheme in endpoint, use protocol in config
+        if (!strpos($endpoint, "://")) {
+            $config_protocol = strtolower(trim($config[BceClientConfigOptions::PROTOCOL]));
+            if ($config_protocol !== 'http' && $config_protocol !== 'https') {
                 throw new \InvalidArgumentException(
-                    "Invalid endpoint $endpoint, unsupported scheme $scheme."
+                    "Invalid protocol $config_protocol."
                 );
             }
-            $protocol = $scheme;
-        } else {
-            $protocol =
-                strtolower(trim($config[BceClientConfigOptions::PROTOCOL]));
-            if ($protocol !== 'http' && $protocol !== 'https') {
-                throw new \InvalidArgumentException(
-                    "Invalid protocol $protocol."
-                );
-            }
+            $endpoint = $config_protocol . "://" . $endpoint;
         }
+
+        $parsed_endpoint = parse_url($endpoint);
+
+        $scheme = strtolower($parsed_endpoint['scheme']);
+        if ($scheme !== 'http' && $scheme !== 'https') {
+            throw new \InvalidArgumentException(
+                "Invalid endpoint $endpoint, unsupported scheme $scheme."
+            );
+        }
+        $protocol = $scheme;
+
         $host = $parsed_endpoint['host'];
         if (isset($parsed_endpoint['port'])) {
             $port = (int) $parsed_endpoint['port'];
@@ -78,8 +82,8 @@ class HttpUtils
                 $port = 443;
             }
         }
-        if ($protocol === 'http' && $port === 80
-            || $protocol === 'https' && $port === 443) {
+        if (($protocol === 'http' && $port === 80)
+            || ($protocol === 'https' && $port === 443)) {
             $hostHeader = $host;
         } else {
             $hostHeader = "$host:$port";

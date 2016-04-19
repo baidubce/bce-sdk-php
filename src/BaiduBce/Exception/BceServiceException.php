@@ -43,6 +43,9 @@ class BceServiceException extends BceBaseException
         $this->requestId = $requestId;
         $this->errorCode = $errorCode;
         $this->statusCode = $statusCode;
+        if (is_array($errorMessage)) {
+            $errorMessage = json_encode($errorMessage);
+        }
         parent::__construct(
             "$errorMessage [requestId:$requestId "
             . "status:$statusCode code:$errorCode]"
