@@ -20,7 +20,7 @@
   },
   "require": {
     "php": ">=5.3.3",
-    "psr/log": "dev-master",
+    "psr/log": "^1.0.0",
     "guzzle/guzzle": "~3.9"
   },
   "suggest": {
