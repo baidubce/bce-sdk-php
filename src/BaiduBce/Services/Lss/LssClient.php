@@ -429,6 +429,59 @@ class LssClient extends BceBaseClient
     }
 
     /**
+     * Set cuepoint to session.
+     *
+     * @param $sessionId string, session id
+     * @param $callback string, callback method name
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *          arguments: array, callback arguments
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function setCuepoint($sessionId, $callback, $options = array()) {
+        list($config, $arguments) = $this->parseOptions(
+            $options,
+            'config',
+            'arguments'
+        );
+
+        if (empty($sessionId)) {
+            throw new BceClientException("The parameter sessionId "
+                . "should NOT be null or empty string");
+        }
+        if (empty($callback)) {
+            throw new BceClientException("The parameter callback "
+                . "should NOT be null or empty string");
+        }
+
+        $body = array();
+
+        $body['callback'] = $callback;
+
+        if ($arguments !== null) {
+            $body['arguments'] = $arguments;
+        }
+
+        $params = array(
+            'cuepoint' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            array(
+                'config' => $config,
+                'params' => $params,
+                'body' => json_encode($body, JSON_FORCE_OBJECT),
+            ),
+            "/session/$sessionId"
+        );
+    }
+
+    /**
      * Start recording a session.
      *
      * @param $sessionId string, session id
