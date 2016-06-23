@@ -58,12 +58,16 @@ class LssClient extends BceBaseClient
      *          pullUrl: string, pulling session's live source url
      *          notification: string, session notification name
      *          securityPolicy: string, session security policy name
+     *          imageWatermarks: array, image watermark list
+     *          timestampWatermarks: array, timestamp watermark list
+     *          thumbnail: string, session thumbnail name
      *      }
      * @return mixed created session detail
      */
     public function createSession($options = array())
     {
-        list($config, $description, $preset, $recording, $region, $pullUrl, $notification, $securityPolicy) = $this->parseOptions(
+        list($config, $description, $preset, $recording, $region, $pullUrl, $notification,
+            $securityPolicy, $imageWatermarks, $timestampWatermarks, $thumbnail) = $this->parseOptions(
             $options,
             'config',
             'description',
@@ -72,13 +76,18 @@ class LssClient extends BceBaseClient
             'region',
             'pullUrl',
             'notification',
-            'securityPolicy'
+            'securityPolicy',
+            'imageWatermarks',
+            'timestampWatermarks',
+            'thumbnail'
         );
 
         $body = array();
 
         if ($description !== null) {
             $body['description'] = $description;
+        } else {
+            $body['description'] = '';
         }
         if ($preset !== null) {
             $body['preset'] = $preset;
@@ -92,6 +101,9 @@ class LssClient extends BceBaseClient
         if ($securityPolicy !== null) {
             $body['securityPolicy'] = $securityPolicy;
         }
+        if ($thumbnail !== null) {
+            $body['thumbnail'] = $thumbnail;
+        }
 
         $publish = array();
         if ($region !== null) {
@@ -104,11 +116,22 @@ class LssClient extends BceBaseClient
             $body['publish'] = $publish;
         }
 
+        $watermarks = array();
+        if ($imageWatermarks !== null) {
+            $watermarks['image'] = $imageWatermarks;
+        }
+        if ($timestampWatermarks !== null) {
+            $watermarks['timestamp'] = $timestampWatermarks;
+        }
+        if (count($watermarks) > 0) {
+            $body['watermarks'] = $watermarks;
+        }
+
         return $this->sendRequest(
             HttpMethod::POST,
             array(
                 'config' => $config,
-                'body' => json_encode($body, JSON_FORCE_OBJECT),
+                'body' => json_encode($body),
             ),
             '/session'
         );
@@ -442,7 +465,8 @@ class LssClient extends BceBaseClient
      * @return mixed
      * @throws BceClientException
      */
-    public function setCuepoint($sessionId, $callback, $options = array()) {
+    public function setCuepoint($sessionId, $callback, $options = array())
+    {
         list($config, $arguments) = $this->parseOptions(
             $options,
             'config',
@@ -992,6 +1016,367 @@ class LssClient extends BceBaseClient
                 'config' => $config,
             ),
             '/recording'
+        );
+    }
+
+    /**
+     * Create a image watermark.
+     *
+     * @param $name string, image watermark name
+     * @param $content string, watermark image base64 encode
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *          maxWidthInPixel: number, watermark maximum width in pixel
+     *          maxHeightInPixel: number, watermark maximum Height in pixel
+     *          sizingPolicy: string, watermark size retractable policy
+     *          verticalAlignment: string, vertically aligned manner
+     *          horizontalAlignment: string, horizontal aligned manner
+     *          verticalOffsetInPixel: number, vertical offset in pixel
+     *          horizontalOffsetInPixel: number, horizontal offset in pixel
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function createImageWatermark($name, $content, $options = array())
+    {
+        list($config, $maxWidthInPixel, $maxHeightInPixel,
+            $sizingPolicy, $verticalAlignment, $horizontalAlignment,
+            $verticalOffsetInPixel, $horizontalOffsetInPixel) = $this->parseOptions(
+            $options,
+            'config',
+            'maxWidthInPixel',
+            'maxHeightInPixel',
+            'sizingPolicy',
+            'verticalAlignment',
+            'horizontalAlignment',
+            'verticalOffsetInPixel',
+            'horizontalOffsetInPixel'
+        );
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name "
+                . "should NOT be null or empty string");
+        }
+        if (empty($content)) {
+            throw new BceClientException("The parameter content "
+                . "should NOT be null or empty string");
+        }
+
+        $body = array(
+            'name' => $name,
+            'content' => $content,
+        );
+
+        $size = array();
+        if ($maxWidthInPixel !== null) {
+            $size['maxWidthInPixel'] = $maxWidthInPixel;
+        }
+        if ($maxHeightInPixel !== null) {
+            $size['maxHeightInPixel'] = $maxHeightInPixel;
+        }
+        if ($sizingPolicy !== null) {
+            $size['sizingPolicy'] = $sizingPolicy;
+        }
+        if (count($size) > 0) {
+            $body['size'] = $size;
+        }
+
+        $position = array();
+        if ($verticalAlignment !== null) {
+            $position['verticalAlignment'] = $verticalAlignment;
+        }
+        if ($horizontalAlignment !== null) {
+            $position['horizontalAlignment'] = $horizontalAlignment;
+        }
+        if ($verticalOffsetInPixel !== null) {
+            $position['verticalOffsetInPixel'] = $verticalOffsetInPixel;
+        }
+        if ($horizontalOffsetInPixel !== null) {
+            $position['horizontalOffsetInPixel'] = $horizontalOffsetInPixel;
+        }
+        if (count($position) > 0) {
+            $body['position'] = $position;
+        }
+
+        return $this->sendRequest(
+            HttpMethod::POST,
+            array(
+                'config' => $config,
+                'body' => json_encode($body, JSON_FORCE_OBJECT),
+            ),
+            "/watermark/image"
+        );
+    }
+
+    /**
+     * Get a image watermark.
+     *
+     * @param $name string, image watermark name
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed image watermark detail
+     * @throws BceClientException
+     */
+    public function getImageWatermark($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/watermark/image/$name"
+        );
+    }
+
+    /**
+     * List image watermarks.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed image watermark list
+     */
+    public function listImageWatermarks($options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            '/watermark/image'
+        );
+    }
+
+    /**
+     * Delete a image watermark.
+     *
+     * @param $name string, image watermark name
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function deleteImageWatermark($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::DELETE,
+            array(
+                'config' => $config,
+            ),
+            "/watermark/image/$name"
+        );
+    }
+
+    /**
+     * Create a timestamp watermark.
+     *
+     * @param $name string, image watermark name
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *          timezone: string, timestamp time zone
+     *          alpha: number, timestamp watermark transparency
+     *          fontFamily: string, timestamp watermark fonts
+     *          fontSizeInPoint: number, font size in point
+     *          fontColor: string, timestamp watermark font color
+     *          backgroundColor: string, background color
+     *          verticalAlignment: string, vertically aligned manner
+     *          horizontalAlignment: string, horizontal aligned manner
+     *          verticalOffsetInPixel: number, vertical offset in pixel
+     *          horizontalOffsetInPixel: number, horizontal offset in pixel
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function createTimestampWatermark($name, $options = array())
+    {
+        list($config, $timezone, $alpha, $fontFamily, $fontSizeInPoint,
+            $fontColor, $backgroundColor, $verticalAlignment, $horizontalAlignment,
+            $verticalOffsetInPixel, $horizontalOffsetInPixel) = $this->parseOptions(
+            $options,
+            'config',
+            'timezone',
+            'alpha',
+            'fontFamily',
+            'fontSizeInPoint',
+            'fontColor',
+            'backgroundColor',
+            'verticalAlignment',
+            'horizontalAlignment',
+            'verticalOffsetInPixel',
+            'horizontalOffsetInPixel'
+        );
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name "
+                . "should NOT be null or empty string");
+        }
+
+        $body = array(
+            'name' => $name,
+        );
+
+        if ($timezone !== null) {
+            $body['timezone'] = $timezone;
+        }
+        if ($alpha !== null) {
+            $body['alpha'] = $alpha;
+        }
+
+        $font = array();
+        if ($fontFamily !== null) {
+            $font['family'] = $fontFamily;
+        }
+        if ($fontSizeInPoint !== null) {
+            $font['sizeInPoint'] = $fontSizeInPoint;
+        }
+        if ($fontColor !== null) {
+            $font['color'] = $fontColor;
+        }
+        if (count($font) > 0) {
+            $body['font'] = $font;
+        }
+
+        $background = array();
+        if ($backgroundColor !== null) {
+            $background['color'] = $backgroundColor;
+            $body['background'] = $background;
+        }
+
+        $position = array();
+        if ($verticalAlignment !== null) {
+            $position['verticalAlignment'] = $verticalAlignment;
+        }
+        if ($horizontalAlignment !== null) {
+            $position['horizontalAlignment'] = $horizontalAlignment;
+        }
+        if ($verticalOffsetInPixel !== null) {
+            $position['verticalOffsetInPixel'] = $verticalOffsetInPixel;
+        }
+        if ($horizontalOffsetInPixel !== null) {
+            $position['horizontalOffsetInPixel'] = $horizontalOffsetInPixel;
+        }
+        if (count($position) > 0) {
+            $body['position'] = $position;
+        }
+
+        return $this->sendRequest(
+            HttpMethod::POST,
+            array(
+                'config' => $config,
+                'body' => json_encode($body, JSON_FORCE_OBJECT),
+            ),
+            "/watermark/timestamp"
+        );
+    }
+
+    /**
+     * Get a timestamp watermark.
+     *
+     * @param $name string, timestamp watermark name
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed timestamp watermark detail
+     * @throws BceClientException
+     */
+    public function getTimestampWatermark($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/watermark/timestamp/$name"
+        );
+    }
+
+    /**
+     * List timestamp watermarks.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed timestamp watermark list
+     */
+    public function listTimestampWatermarks($options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            '/watermark/timestamp'
+        );
+    }
+
+    /**
+     * Delete a timestamp watermark.
+     *
+     * @param $name string, timestamp watermark name
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function deleteTimestampWatermark($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::DELETE,
+            array(
+                'config' => $config,
+            ),
+            "/watermark/timestamp/$name"
         );
     }
 
