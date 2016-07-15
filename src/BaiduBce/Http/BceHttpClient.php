@@ -209,9 +209,23 @@ class BceHttpClient
             throw new BceClientException($e->getMessage());
         }
 
+        //statusCode < 200
         if ($guzzleResponse->isInformational()) {
             throw new BceClientException('Can not handle 1xx Http status code');
-        } elseif (!$guzzleResponse->isSuccessful()) {
+        }
+        $chunked_fail = false;
+        //for chunked http response, http status code can not be trust
+        //http body may has error code
+        if ($guzzleResponse->getTransferEncoding() === 'chunked') {
+            if ($guzzleResponse->isContentType('json')) {
+                $responseBody = $guzzleResponse->json();
+                if (isset($responseBody['code'])) {
+                    $chunked_fail = true;
+                }
+            }
+        }
+        //Successful means 2XX or 304
+        if (!$guzzleResponse->isSuccessful()|| $chunked_fail) {
             $requestId = $guzzleResponse->getHeader(HttpHeaders::BCE_REQUEST_ID);
             $message = $guzzleResponse->getReasonPhrase();
             $code = null;

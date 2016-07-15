@@ -66,12 +66,13 @@ class LssClient extends BceBaseClient
      */
     public function createSession($options = array())
     {
-        list($config, $description, $preset, $recording, $region, $pullUrl, $notification,
+        list($config, $description, $preset, $presets, $recording, $region, $pullUrl, $notification,
             $securityPolicy, $imageWatermarks, $timestampWatermarks, $thumbnail) = $this->parseOptions(
             $options,
             'config',
             'description',
             'preset',
+            'presets',
             'recording',
             'region',
             'pullUrl',
@@ -91,6 +92,13 @@ class LssClient extends BceBaseClient
         }
         if ($preset !== null) {
             $body['preset'] = $preset;
+        }
+        if ($presets !== null) {
+            $presetMap = array();
+            for ($i = 0; $i < count($presets); $i++) {
+                $presetMap['L'.$i] = $presets[$i];
+            }
+            $body['presets'] = $presetMap;
         }
         if ($recording !== null) {
             $body['recording'] = $recording;
@@ -199,13 +207,56 @@ class LssClient extends BceBaseClient
                 $hlsTokenPlain = '/' . $sessionId . '/live.m3u8;' . $expireString;
                 $hlsToken = hash_hmac('sha256', $hlsTokenPlain, $securityPolicy->auth->key);
                 $session->play->hlsUrl = $hlsUrl . '?token=' . $hlsToken . '&expire=' . $expireString;
+            } elseif (isset($session->play->hlsUrls)) {
+                $hlsUrls = array();
+                foreach ($session->play->hlsUrls as $line => $hlsUrl) {
+                    if (isset($hlsUrl)) {
+                        $hlsToken = '';
+                        if ($line == 'L0') {
+                            $hlsTokenPlain = '/' . $sessionId . '/live.m3u8;' . $expireString;
+                            $hlsToken = hash_hmac('sha256', $hlsTokenPlain, $securityPolicy->auth->key);
+                        } else {
+                            $hlsTokenPlain = '/' . $sessionId . '-' . $line . '/live.m3u8;' . $expireString;
+                            $hlsToken = hash_hmac('sha256', $hlsTokenPlain, $securityPolicy->auth->key);
+                        }
+                        $hlsUrls[$line] = $hlsUrl . '?token=' . $hlsToken . '&expire=' . $expireString;
+                    }
+                }
+                $session->play->hlsUrls = $hlsUrls;
             }
 
             if (isset($session->play->rtmpUrl)) {
+                $rtmpUrls = array();
                 $rtmpUrl = $session->play->rtmpUrl;
                 $rtmpTokenPlain = $sessionId . ';' . $expireString;
                 $rtmpToken = hash_hmac('sha256', $rtmpTokenPlain, $securityPolicy->auth->key);
                 $session->play->rtmpUrl = $rtmpUrl . '?token=' . $rtmpToken . '&expire=' . $expireString;
+            } elseif (isset($session->play->rtmpUrls)) {
+                foreach ($session->play->rtmpUrls as $line => $rtmpUrl) {
+                    if (isset($rtmpUrl)) {
+                        $rtmpTokenPlain = $sessionId . ';' . $expireString;
+                        $rtmpToken = hash_hmac('sha256', $rtmpTokenPlain, $securityPolicy->auth->key);
+                        $rtmpUrls[$line] = $rtmpUrl . '?token=' . $rtmpToken . '&expire=' . $expireString;
+                    }
+                }
+                $session->play->rtmpUrls = $rtmpUrls;
+            }
+
+            if (isset($session->play->flvUrl)) {
+                $flvUrl = $session->play->flvUrl;
+                $flvTokenPlain = $sessionId . ';' . $expireString;
+                $flvToken = hash_hmac('sha256', $flvTokenPlain, $securityPolicy->auth->key);
+                $session->play->flvUrl = $flvUrl . '?token=' . $flvToken . '&expire=' . $expireString;
+            } elseif (isset($session->play->flvUrls)) {
+                $flvUrls = array();
+                foreach ($session->play->flvUrls as $line => $flvUrl) {
+                    if (isset($flvUrl)) {
+                        $flvTokenPlain = $sessionId . ';' . $expireString;
+                        $flvToken = hash_hmac('sha256', $flvTokenPlain, $securityPolicy->auth->key);
+                        $flvUrls[$line] = $flvUrl . '?token=' . $flvToken . '&expire=' . $expireString;
+                    }
+                }
+                $session->play->flvUrls = $flvUrls;
             }
         }
 
