@@ -760,11 +760,12 @@ class BosClient extends BceBaseClient
             );
         }
 
-        list($config, $userMetadata, $etag) = $this->parseOptions(
+        list($config, $userMetadata, $etag, $storageClass) = $this->parseOptions(
             $options,
             BosOptions::CONFIG,
             BosOptions::USER_METADATA,
-            BosOptions::ETAG
+            BosOptions::ETAG,
+            BosOptions::STORAGE_CLASS
         );
 
         $headers = array();
@@ -777,7 +778,6 @@ class BosClient extends BceBaseClient
             $etag = trim($etag, '"');
             $headers[HttpHeaders::BCE_COPY_SOURCE_IF_MATCH] = '"' . $etag . '"';
         }
-
         if ($userMetadata === null) {
             $headers[HttpHeaders::BCE_COPY_METADATA_DIRECTIVE] = 'copy';
         } else {
@@ -786,6 +786,11 @@ class BosClient extends BceBaseClient
                 $headers,
                 $userMetadata
             );
+        }
+        if ($storageClass !== null) {
+            $headers[HttpHeaders::BCE_STORAGE_CLASS] = $storageClass;
+        } else {
+            $headers[HttpHeaders::BCE_STORAGE_CLASS] = StorageClass::STANDARD;
         }
 
         return $this->sendRequest(
@@ -814,11 +819,19 @@ class BosClient extends BceBaseClient
         $key,
         $options = array()
     ) {
-        list($config) = $this->parseOptions($options, BosOptions::CONFIG);
+        list($config, $storageClass) = $this->parseOptions(
+            $options, 
+            BosOptions::CONFIG,
+            BosOptions::STORAGE_CLASS);
 
         $headers = array(
             HttpHeaders::CONTENT_TYPE => HttpContentTypes::OCTET_STREAM,
         );
+        if ($storageClass !== null) {
+            $headers[HttpHeaders::BCE_STORAGE_CLASS] = $storageClass;
+        } else {
+            $headers[HttpHeaders::BCE_STORAGE_CLASS] = StorageClass::STANDARD;
+        }
 
         return $this->sendRequest(
             HttpMethod::POST,
@@ -1213,6 +1226,10 @@ class BosClient extends BceBaseClient
             $args['headers'][HttpHeaders::CONTENT_TYPE] =
                 HttpContentTypes::JSON;
         }
+        // prevent low version curl add a default pragma:no-cache
+        if (!isset($args['headers'][HttpHeaders::PRAGMA])) {
+            $args['headers'][HttpHeaders::PRAGMA] = '';
+        }
 
         $path = $this->getPath($args['bucket_name'], $args['key']);
         $response = $this->httpClient->sendRequest(
@@ -1270,11 +1287,13 @@ class BosClient extends BceBaseClient
         list(
             $contentType,
             $contentSHA256,
+            $storageClass,
             $userMetadata
         ) = $this->parseOptionsIgnoreExtra(
             $options,
             BosOptions::CONTENT_TYPE,
             BosOptions::CONTENT_SHA256,
+            BosOptions::STORAGE_CLASS,
             BosOptions::USER_METADATA
         );
         if ($contentType !== null) {
@@ -1284,6 +1303,12 @@ class BosClient extends BceBaseClient
         if ($contentSHA256 !== null) {
             $headers[HttpHeaders::BCE_CONTENT_SHA256] = $contentSHA256;
             unset($options[BosOptions::CONTENT_SHA256]);
+        }
+        if ($storageClass !== null) {
+            $headers[HttpHeaders::BCE_STORAGE_CLASS] = $storageClass;
+            unset($options[BosOptions::STORAGE_CLASS]);
+        } else {
+            $headers[HttpHeaders::BCE_STORAGE_CLASS] = StorageClass::STANDARD;
         }
         if ($userMetadata !== null) {
             $this->populateRequestHeadersWithUserMetadata($headers, $userMetadata);

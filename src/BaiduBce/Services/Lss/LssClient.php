@@ -146,6 +146,44 @@ class LssClient extends BceBaseClient
     }
 
     /**
+     * Update pull url of session.
+     *
+     * @param $sessionId string, session id
+     * @param $pullUrl string, pullUrl
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed session detail
+     * @throws BceClientException
+     */
+    public function updatePullUrl($sessionId, $pullUrl, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($sessionId)) {
+            throw new BceClientException("The parameter sessionId "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array();
+
+        if ($pullUrl !== null) {
+            $params['pullUrl'] = $pullUrl;
+        }
+
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/session/$sessionId"
+        );
+    }
+
+    /**
      * Get a session.
      *
      * @param $sessionId string, session id
@@ -279,17 +317,33 @@ class LssClient extends BceBaseClient
      *      {
      *          config: the optional bce configuration, which will overwrite the
      *                  default client configuration that was passed in constructor.
+     *          status: session status, READY / ONGOING / PAUSED
+     *          marker: query marker.
+     *          maxSize: max number of listed sessions.
      *      }
      * @return mixed session list
      */
     public function listSessions($options = array())
     {
-        list($config) = $this->parseOptions($options, 'config');
+        list($config, $status, $marker, $maxSize) = $this->parseOptions($options, 'config', 'status', 'marker', 'maxSize');
+
+        $params = array();
+
+        if ($status !== null) {
+            $params['status'] = $status;
+        }
+        if ($marker !== null) {
+            $params['marker'] = $marker;
+        }
+        if ($maxSize !== null) {
+            $params['maxSize'] = $maxSize;
+        }
 
         return $this->sendRequest(
             HttpMethod::GET,
             array(
                 'config' => $config,
+                'params' => $params,
             ),
             '/session'
         );
@@ -1432,6 +1486,956 @@ class LssClient extends BceBaseClient
     }
 
     /**
+     * API for Lss 3.0.
+     * Support push and play stream by customized domain.
+     */
+
+    /**
+     * Get a stream info.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed session detail
+     * @throws BceClientException
+     */
+    public function getStream($domain, $app, $stream, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/domain/$domain/app/$app/stream/$stream"
+        );
+    }
+
+    /**
+     * Create a stream.
+     *
+     * @param $domain string, name of play domain
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed session detail
+     * @throws BceClientException
+     */
+    public function createStream($domain, $options = array())
+    {
+        list($config, $app, $publish, $scene) = $this->parseOptions(
+            $options,
+            'config',
+            'app',
+            'publish',
+            'scene');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+
+        $body = array();
+
+        if ($app !== null) {
+            $body['app'] = $app;
+        }
+        if ($publish !== null) {
+            $body['publish'] = $publish;
+        }
+        if ($scene !== null) {
+            $body['scene'] = $scene;
+        }
+
+        return $this->sendRequest(
+            HttpMethod::POST,
+            array(
+                'config' => $config,
+                'body' => json_encode($body),
+            ),
+            "/domain/$domain/stream"
+        );
+    }
+
+    /**
+     * List streams.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *          status: stream status, READY / ONGOING / PAUSED
+     *          marker: query marker.
+     *          maxSize: max number of listed sessions.
+     *      }
+     * @return mixed stream list
+     */
+    public function listStreams($domain, $options = array())
+    {
+        list($config, $status, $marker, $maxSize) = $this->parseOptions($options, 'config', 'status', 'marker', 'maxSize');
+
+        $params = array();
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if ($status !== null) {
+            $params['status'] = $status;
+        }
+        if ($marker !== null) {
+            $params['marker'] = $marker;
+        }
+        if ($maxSize !== null) {
+            $params['maxSize'] = $maxSize;
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/domain/$domain/stream"
+        );
+    }
+
+    /**
+     * Pause a stream.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function pauseStream($domain, $app, $stream, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'pause' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/domain/$domain/app/$app/stream/$stream"
+        );
+    }
+
+    /**
+     * Resume a stream.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function resumeStream($domain, $app, $stream, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'resume' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/domain/$domain/app/$app/stream/$stream"
+        );
+    }
+
+    /**
+     * Get domain static info.
+     *
+     * @param $domain string, name of play domain
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getDomainStatistics($domain, $options = array())
+    {
+        list($config, $startDate, $endDate, $aggregate) = $this->parseOptions(
+            $options,
+            'config',
+            'startDate',
+            'endDate',
+            'aggregate'
+        );
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($startDate)) {
+            throw new BceClientException("The query parameter startDate "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endDate)) {
+            throw new BceClientException("The query parameter endDate "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'aggregate' => $aggregate,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/$domain"
+        );
+    }
+
+    /**
+     * Get domain summary static info.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getDomainSummaryStatistics($options = array())
+    {
+        list($config, $startTime, $endTime) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime'
+        );
+
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/summary"
+        );
+    }
+
+    /**
+     * List domain static info.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function listDomainStatistics($options = array())
+    {
+        list($config, $startTime, $endTime, $keywordType, $keyword, $orderBy) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'keywordType',
+            'keyword',
+            'orderBy'
+        );
+
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'keywordType' => $keywordType,
+            'keyword' => $keyword,
+            'orderBy' => $orderBy,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/list"
+        );
+    }
+
+    /**
+     * Get stream static info.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getStreamStatistics($domain, $app, $stream, $options = array())
+    {
+        list($config, $startDate, $endDate, $aggregate) = $this->parseOptions(
+            $options,
+            'config',
+            'startDate',
+            'endDate',
+            'aggregate'
+        );
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+        if (empty($startDate)) {
+            throw new BceClientException("The query parameter startDate "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endDate)) {
+            throw new BceClientException("The query parameter endDate "
+                . "should NOT be null or empty string");
+        }
+
+
+        $params = array(
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'aggregate' => $aggregate,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/$domain/app/$app/stream/$stream"
+        );
+    }
+
+    /**
+     * List stream static info.
+     *
+     * @param $domain string, name of play domain
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function listStreamStatistics($domain, $options = array())
+    {
+        list($config, $app, $startTime, $endTime, $pageNo, $pageSize,
+            $keywordType, $keyword, $orderBy) = $this->parseOptions(
+            $options,
+            'config',
+            'app',
+            'startTime',
+            'endTime',
+            'pageNo',
+            'pageSize',
+            'keywordType',
+            'keyword',
+            'orderBy'
+        );
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'app' => $app,
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'pageNo' => $pageNo,
+            'pageSize' => $pageSize,
+            'keywordType' => $keywordType,
+            'keyword' => $keyword,
+            'orderBy' => $orderBy,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/$domain/stream"
+        );
+    }
+
+    /**
+     * Get all domain traffic static info.
+     *
+     * @param $domain string, name of play domain
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getAllDomainTrafficStatistics($options = array())
+    {
+        list($config, $startTime, $endTime, $timeInterval) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'timeInterval'
+        );
+
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($timeInterval)) {
+            throw new BceClientException(
+                "The query parameter timeInterval should be set in [SHORT_TERM|MID_TERM|LONG_TERM] "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'timeInterval' => $timeInterval,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/traffic"
+        );
+    }
+
+    /**
+     * Get a specific domain traffic static info.
+     *
+     * @param $domain string, name of play domain
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getDomainTrafficStatistics($domain, $options = array())
+    {
+        list($config, $startTime, $endTime, $timeInterval) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'timeInterval'
+        );
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($timeInterval)) {
+            throw new BceClientException(
+                "The query parameter timeInterval should be set in [SHORT_TERM|MID_TERM|LONG_TERM] "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'timeInterval' => $timeInterval,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/$domain/traffic"
+        );
+    }
+
+    /**
+     * Get all domain bandwidth static info.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getAllDomainBandwidthStatistics($options = array())
+    {
+        list($config, $startTime, $endTime, $timeInterval) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'timeInterval'
+        );
+
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($timeInterval)) {
+            throw new BceClientException(
+                "The query parameter timeInterval should be set in [SHORT_TERM|MID_TERM|LONG_TERM] "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'timeInterval' => $timeInterval,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/bandwidth"
+        );
+    }
+
+    /**
+     * Get a specific domain bandwidth static info.
+     *
+     * @param $domain string, name of play domain
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getDomainBandwidthStatistics($domain, $options = array())
+    {
+        list($config, $startTime, $endTime, $timeInterval) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'timeInterval'
+        );
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($timeInterval)) {
+            throw new BceClientException(
+                "The query parameter timeInterval should be set in [SHORT_TERM|MID_TERM|LONG_TERM] "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'timeInterval' => $timeInterval,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/$domain/bandwidth"
+        );
+    }
+
+    /**
+     * Get all domain play count static info.
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getAllDomainPlayCountStatistics($options = array())
+    {
+        list($config, $startTime, $endTime, $timeInterval) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'timeInterval'
+        );
+
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($timeInterval)) {
+            throw new BceClientException(
+                "The query parameter timeInterval should be set in [SHORT_TERM|MID_TERM|LONG_TERM] "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'timeInterval' => $timeInterval,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/playcount"
+        );
+    }
+
+    /**
+     * Get a specific domain play count static info.
+     *
+     * @param $domain string, name of play domain
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getDomainPlayCountStatistics($domain, $options = array())
+    {
+        list($config, $startTime, $endTime, $timeInterval) = $this->parseOptions(
+            $options,
+            'config',
+            'startTime',
+            'endTime',
+            'timeInterval'
+        );
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($startTime)) {
+            throw new BceClientException("The query parameter startTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($endTime)) {
+            throw new BceClientException("The query parameter endTime "
+                . "should NOT be null or empty string");
+        }
+        if (empty($timeInterval)) {
+            throw new BceClientException(
+                "The query parameter timeInterval should be set in [SHORT_TERM|MID_TERM|LONG_TERM] "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'startTime' => $startTime,
+            'endTime' => $endTime,
+            'timeInterval' => $timeInterval,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistics/domain/$domain/playcount"
+        );
+    }
+
+    /**
+     * Update watermark of the stream.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function updateWatermarksOfStream($domain, $app, $stream, $options = array())
+    {
+        list($config, $watermarks) = $this->parseOptions($options, 'config', 'watermarks');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+
+        $body = array();
+
+        if (count($watermarks) > 0) {
+            $body['watermarks'] = $watermarks;
+        }
+
+        $params = array(
+            'watermark' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::POST,
+            array(
+                'config' => $config,
+                'params' => $params,
+                'body' => json_encode($body),
+            ),
+            "/domain/$domain/app/$app/stream/$stream"
+        );
+    }
+
+    /**
+     * List realtime stream static info.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function listRealtimeStreamStatistics($domain, $app, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The query parameter app "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/statistics/realtime/domain/$domain/app/$app"
+        );
+    }
+
+    /**
+     * Get realtime live source info of the stream.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed
+     * @throws BceClientException
+     */
+    public function getRealtimeStreamSourceInfo($domain, $app, $stream, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+
+        $params = array(
+            'sourceInfo' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/domain/$domain/app/$app/stream/$stream"
+        );
+    }
+
+    /**
      * Create HttpClient and send request
      * @param string $httpMethod The Http request method
      * @param array $varArgs The extra arguments
@@ -1472,7 +2476,7 @@ class LssClient extends BceBaseClient
         );
 
         $result = $this->parseJsonResult($response['body']);
-        $result->metadata = $this->convertHttpHeadersToMetadata($response['headers']);
+
         return $result;
     }
 }

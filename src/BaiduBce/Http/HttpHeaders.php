@@ -41,6 +41,7 @@ class HttpHeaders
     const RANGE = 'Range';
     const SERVER = 'Server';
     const USER_AGENT = 'User-Agent';
+    const PRAGMA = 'Pragma';
 
     // BCE Common HTTP Headers
     const BCE_PREFIX = 'x-bce-';
@@ -52,6 +53,7 @@ class HttpHeaders
     const BCE_DATE = 'x-bce-date';
     const BCE_USER_METADATA_PREFIX = 'x-bce-meta-';
     const BCE_REQUEST_ID = 'x-bce-request-id';
+    const BCE_STORAGE_CLASS = 'x-bce-storage-class';
 
     // BOS HTTP Headers
     const BOS_DEBUG_ID = 'x-bce-Bos-debug-id';

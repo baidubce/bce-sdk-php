@@ -97,20 +97,24 @@ class VodClient extends BceBaseClient
      *      {
      *          config: the optional bce configuration, which will overwrite the
      *                  default vod client configuration that was passed in constructor.
+     *          sourceExtension: extension of the media source.
+     *          transcodingPresetGroupName: preset group to be used for the media
      *      }
      * @return mixed created vod media info
      * @throws BceClientException
      */
     public function processMedia($mediaId, $title, $description, $options = array())
     {
-        list($config) = $this->parseOptions($options, 'config');
-
+        list($config, $extension, $presetGroup) =
+            $this->parseOptions($options, 'config', 'sourceExtension', 'transcodingPresetGroupName');
         $params = array(
             'process' => null,
         );
         $body = array(
             'title' => $title,
             'description' => $description,
+            'sourceExtension' => $extension,
+            'transcodingPresetGroupName' => $presetGroup,
         );
 
         return $this->sendRequest(
@@ -121,6 +125,79 @@ class VodClient extends BceBaseClient
                 'body' => json_encode($body),
             ),
             "/media/$mediaId"
+        );
+    }
+
+
+    /**
+     * rerun a vod media
+     * you can call rerunMedia method to re-process a VOD media.
+     *
+     * @param $mediaId
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed created vod media info
+     * @throws BceClientException
+     */
+    public function rerunMedia($mediaId, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        $params = array(
+            'rerun' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/media/$mediaId"
+        );
+    }
+
+
+    /**
+     * merge vod media(s)
+     * You can merge media(s) to one media
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed merged vod media info
+     * @throws BceClientException
+     */
+    public function mergeMedia($mediaClips, $title, $description, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        $params = array(
+            'merge' => null,
+        );
+
+        $attributes = array(
+            'title' => $title,
+            'description' => $description,
+        );
+        $body = array(
+            'attributes' => $attributes,
+            'mediaClips' => $mediaClips,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::POST,
+            array(
+                'config' => $config,
+                'params' => $params,
+                'body' => json_encode($body),
+            ),
+            "/media"
         );
     }
 
@@ -147,15 +224,17 @@ class VodClient extends BceBaseClient
         if (empty($title)) {
             throw new BceClientException("The parameter title should NOT be null or empty string");
         }
-
-        if (empty($title)) {
-            throw new BceClientException("The parameter title should NOT be null or empty string");
-        }
         // apply media
         $uploadInfo = $this->applyMedia($options);
         // upload file to bos
         $this->uploadMedia($fileName, $uploadInfo->sourceBucket, $uploadInfo->sourceKey);
         // process media
+        // try to cal the extension of the file
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        if (!preg_match("/^[a-z0-9]{0,10}$/", $extension)) {
+            $extension = '';
+        }
+        $options['extension'] = $extension;
         return $this->processMedia($uploadInfo->mediaId, $title, $description, $options);
     }
 
@@ -186,12 +265,17 @@ class VodClient extends BceBaseClient
         if (empty($title)) {
             throw new BceClientException("The parameter title should NOT be null or empty string");
         }
-
         // apply media
         $uploadInfo = $this->applyMedia($options);
         // copy bos object
         $this->bosClient->copyObject($bucket, $key, $uploadInfo->sourceBucket, $uploadInfo->sourceKey);
         // process media
+        // try to cal the extension of the file
+        $extension = strtolower(pathinfo($key, PATHINFO_EXTENSION));
+        if (!preg_match("/^[a-z0-9]{0,10}$/", $extension)) {
+            $extension = '';
+        }
+        $options['extension'] = $extension;
         return $this->processMedia($uploadInfo->mediaId, $title, $description, $options);
     }
 
@@ -225,24 +309,84 @@ class VodClient extends BceBaseClient
     }
 
     /**
-     * get the info of current user's all vod media
+     * get the info of current user's all vod media by marker
      *
      * @param array $options Supported options:
      *      {
      *          config: the optional bce configuration, which will overwrite the
      *                  default vod client configuration that was passed in constructor.
+     *          marker: string, marker of current query
+     *          maxSize: int, max size of media(s) of current query
+     *          title: string, title prefix of the media(s)
+     *          status: string, status of the media(s)
+     *          begin: string, the low limit of the createTime of the media(s)
+     *          end: string, the upper limit of the createTime of the media(s)
      *      }
      * @return mixed the info of user's all media
      * @throws BceClientException
      */
-    public function listMedia($options = array())
+    public function listMediaByMarker($options = array())
     {
-        list($config) = $this->parseOptions($options, 'config');
+        list($config, $marker, $maxSize, $title, $status, $begin, $end) =
+            $this->parseOptions($options, 'config', 'marker', 'maxSize', 'title', 'status', 'begin', 'end');
+
+        $params = array(
+            'marker' => $marker,
+            'maxSize' => $maxSize,
+            'title' => $title,
+            'status' => $status,
+            'begin' => $begin,
+            'end' => $end,
+        );
 
         return $this->sendRequest(
             HttpMethod::GET,
             array(
                 'config' => $config,
+                'params' => $params,
+            ),
+            '/media'
+        );
+    }
+
+    /**
+     * get the info of current user's all vod media by page
+     *
+     * @param $pageNo integer, pageNo of the resultSet
+     * @param $pageSize integer, pageSize of the resultSet
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *          title: string, title prefix of the media(s)
+     *          status: string, status of the media(s)
+     *          begin: string, the low limit of the createTime of the media(s)
+     *          end: string, the upper limit of the createTime of the media(s)
+     *      }
+     * @return mixed the info of user's all media
+     * @throws BceClientException
+     */
+    public function listMediaByPage($pageNo,
+                                    $pageSize,
+                                    $options = array())
+    {
+        list($config, $title, $status, $begin, $end) =
+            $this->parseOptions($options, 'config', 'title', 'status', 'begin', 'end');
+
+        $params = array(
+            'pageNo' => $pageNo,
+            'pageSize' => $pageSize,
+            'title' => $title,
+            'status' => $status,
+            'begin' => $begin,
+            'end' => $end,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
             ),
             '/media'
         );
@@ -294,6 +438,53 @@ class VodClient extends BceBaseClient
         );
     }
 
+    /**
+     * update the attributes of a vod media
+     *
+     * @param $mediaId string, mediaId of the media
+     * @param $title string, new title of the media
+     * @param $description string, new description of the media
+     * @param $sourceExtension string, new sourceExtension of the media
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of updating
+     * @throws BceClientException
+     */
+    public function updateMediaAttributes($mediaId, $title, $description, $sourceExtension, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($mediaId)) {
+            throw new BceClientException("The parameter mediaId should NOT be null or empty string");
+        }
+
+        if (empty($title)) {
+            throw new BceClientException("The parameter title should NOT be null or empty string");
+        }
+
+        $body = array(
+            'title' => $title,
+            'description' => $description,
+            'sourceExtension' => $sourceExtension,
+        );
+
+        $params = array(
+            'attributes' => null,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::PUT,
+            array(
+                'config' => $config,
+                'body' => json_encode($body),
+                'params' => $params,
+            ),
+            "/media/$mediaId"
+        );
+    }
     /**
      * disable a vod media
      *
@@ -362,6 +553,53 @@ class VodClient extends BceBaseClient
         );
     }
 
+
+    /**
+     * get the statistic of a vod media
+     *
+     * @param $mediaId string, mediaId of the media
+     * @param $startTime string
+     * @param $endTime string
+     * @param $aggregate string, 'true' or 'false'
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of publishing
+     * @throws BceClientException
+     */
+    public function getMediaStatistic($mediaId,
+                                      $startTime,
+                                      $endTime,
+                                      $aggregate,
+                                      $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+        if (empty($mediaId)) {
+            throw new BceClientException("The parameter mediaId should NOT be null or empty string");
+        }
+        $params = array();
+        if (!empty($startTime)) {
+            $params['startTime'] = $startTime;
+        }
+        if (!empty($endTime)) {
+            $params['endTime'] = $endTime;
+        }
+        if (!empty($aggregate)) {
+            $params['aggregate'] = $aggregate;
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/statistic/media/$mediaId"
+        );
+    }
+
     /**
      * delete a vod media
      *
@@ -391,9 +629,8 @@ class VodClient extends BceBaseClient
         );
     }
 
-
     /**
-     * get the playable file and cover page of a vod media
+     * get the delivery info of a vod media
      *
      * @param $mediaId string, mediaId of the media
      * @param array $options Supported options:
@@ -404,7 +641,7 @@ class VodClient extends BceBaseClient
      * @return mixed the vod media's playable source file and cover page
      * @throws BceClientException
      */
-    public function getPlayableUrl($mediaId, $options = array())
+    public function getMediaDelivery($mediaId, $options = array())
     {
         list($config) = $this->parseOptions($options, 'config');
 
@@ -412,33 +649,27 @@ class VodClient extends BceBaseClient
             throw new BceClientException("The parameter mediaId should NOT be null or empty string");
         }
 
-        $params = array(
-            'media_id' => $mediaId,
-        );
-
         return $this->sendRequest(
             HttpMethod::GET,
             array(
                 'config' => $config,
-                'params' => $params,
             ),
-            "/service/file"
+            "/media/$mediaId/delivery"
         );
     }
 
 
     /**
      * get the source code for a vod media.
-     * vod offer 3 kinds of code: html, flash and url.
-     * html and flash can be simply embed in your html code,
-     * while url can be fill in the address bar of the browser.
+     * vod offer html code and file/cover.
+     * html can be simply embed in your html code,
+     * while file/cover can be fill in android/ios player or else.
      *
      * @param $mediaId string, mediaId of the media
-     * @param $width integer, the width of the player size
-     * @param $height integer, the height of the player size
-     * @param $autoStart boolean, whether the player start to play the media automatically
-     * @param $autoDecodeBase64 boolean, the vod restful api return html/object code in base64 by default.
-     *   if $autoDecodeBase64 is set, the sdk will decode them automatically
+     * @param $width : integer, the width of the player size
+     * @param $height : integer, the height of the player size
+     * @param $autoStart : string, whether the player start to play the media automatically
+     * @param $ak : string, player code need ak to be filled, if not applied, vod will use ak in config automatically.
      * @param array $options Supported options:
      *      {
      *          config: the optional bce configuration, which will overwrite the
@@ -447,19 +678,26 @@ class VodClient extends BceBaseClient
      * @return mixed the vod media's playable source file and cover page
      * @throws BceClientException
      */
-    public function getMediaPlayerCode($mediaId, $width = 720, $height = 480, $autoStart = true, $autoDecodeBase64 = false, $options = array())
+    public function getMediaCode($mediaId,
+                                 $width,
+                                 $height,
+                                 $autoStart,
+                                 $ak,
+                                 $options = array())
     {
         list($config) = $this->parseOptions($options, 'config');
 
         if (empty($mediaId)) {
             throw new BceClientException("The parameter mediaId should NOT be null or empty string");
         }
-
+        if ($ak == '') {
+            $ak = $this->config["credentials"]["ak"];
+        }
         $params = array(
-            'media_id' => $mediaId,
             'width' => $width,
             'height' => $height,
-            'auto_start' => $autoStart,
+            'autostart' => $autoStart,
+            'ak' => $ak,
         );
 
         $response = $this->sendRequest(
@@ -468,20 +706,281 @@ class VodClient extends BceBaseClient
                 'config' => $config,
                 'params' => $params,
             ),
-            "/service/code"
+            "/media/$mediaId/code"
         );
-
-        if ($autoDecodeBase64) {
-            $codes = $response->codes;
-            for ($i = 0; $i < count($codes); $i++) {
-                if ($codes[$i]->codeType != "url") {
-                    $codes[$i]->sourceCode = base64_decode($codes[$i]->sourceCode);
-                }
-            }
-        }
-
         return $response;
     }
+
+
+    /**
+     * create a new vod notification
+     *
+     * @param $name string, name of vod notification
+     * @param $endpoint string, endpoint of vod notification
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function createNotification($name, $endpoint, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name should NOT be null or empty string");
+        }
+
+        if (empty($endpoint)) {
+            throw new BceClientException("The parameter endpoint should NOT be null or empty string");
+        }
+
+        $body = array(
+            'name' => $name,
+            'endpoint' => $endpoint,
+        );
+
+        return $this->sendRequest(
+            HttpMethod::POST,
+            array(
+                'config' => $config,
+                'body' => json_encode($body),
+            ),
+            '/notification'
+        );
+    }
+
+    /**
+     * get a vod notification by name
+     *
+     * @param $name string, name of vod notification
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function getNotification($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/notification/$name"
+        );
+    }
+
+    /**
+     * delete a vod notification by name
+     *
+     * @param $name string, name of vod notification
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function deleteNotification($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::DELETE,
+            array(
+                'config' => $config,
+            ),
+            "/notification/$name"
+        );
+    }
+
+    /**
+     * list all vod notifications
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function listNotification($options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            '/notification'
+        );
+    }
+
+
+    /**
+     * get a vod strategy group by name
+     *
+     * @param $name string, name of vod strategy group
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function getStrategyGroup($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/strategygroup/$name"
+        );
+    }
+
+    /**
+     * list all vod strategy groups
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function listStrategyGroup($options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            '/strategygroup'
+        );
+    }
+
+    /**
+     * get a vod preset group by name
+     *
+     * @param $name string, name of vod preset group
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function getPresetGroup($name, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($name)) {
+            throw new BceClientException("The parameter name should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            "/presetgroup/$name"
+        );
+    }
+
+    /**
+     * list all vod preset groups
+     *
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the result of creating
+     * @throws BceClientException
+     */
+    public function listPresetGroup($options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+            ),
+            '/presetgroup'
+        );
+    }
+
+    /**
+     * get the source download info of a vod media
+     *
+     * @param $mediaId string, mediaId of the media
+     * @param $expiredInSeconds integer, expire time of the url
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default vod client configuration that was passed in constructor.
+     *      }
+     * @return mixed the vod media's playable source file and cover page
+     * @throws BceClientException
+     */
+    public function getMediaSource($mediaId, $expiredInSeconds, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($mediaId)) {
+            throw new BceClientException("The parameter mediaId should NOT be null or empty string");
+        }
+        if (empty($expiredInSeconds)) {
+            $expiredInSeconds = -1;
+        }
+
+        $params = array(
+            'sourcedownload' => null,
+            'expiredInSeconds' => $expiredInSeconds,
+        );
+        return $this->sendRequest(
+            HttpMethod::GET,
+            array(
+                'config' => $config,
+                'params' => $params,
+            ),
+            "/media/$mediaId"
+        );
+    }
+
+
 
 
 
@@ -534,7 +1033,6 @@ class VodClient extends BceBaseClient
             throw $e;
         }
     }
-
 
 
     /**

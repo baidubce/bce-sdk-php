@@ -73,4 +73,5 @@ class BosOptions
     const MARKER = 'marker';
     const DELIMITER = 'delimiter';
     const LIMIT = 'limit';
+    const STORAGE_CLASS = 'storageClass';
 } 

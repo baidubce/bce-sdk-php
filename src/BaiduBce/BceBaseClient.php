@@ -108,6 +108,10 @@ class BceBaseClient
                     $headers[HttpHeaders::LAST_MODIFIED]
                 );
         }
+        if (isset($headers[HttpHeaders::BCE_STORAGE_CLASS])) {
+            $metadata[BosOptions::STORAGE_CLASS] =
+              trim($headers[HttpHeaders::BCE_STORAGE_CLASS], '"');
+        }
         return $metadata;
     }
 
