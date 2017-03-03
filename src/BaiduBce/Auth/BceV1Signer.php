@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -67,8 +67,19 @@ class BceV1Signer implements SignerInterface
             $expirationInSeconds = $options[SignOptions::EXPIRATION_IN_SECONDS];
         }
 
-        $accessKeyId = $credentials['ak'];
-        $secretAccessKey = $credentials['sk'];
+        // to compatible with ak/sk or accessKeyId/secretAccessKey
+        if(isset($credentials['ak'])){
+            $accessKeyId = $credentials['ak'];
+        }
+        if(isset($credentials['sk'])){
+            $secretAccessKey = $credentials['sk'];
+        }
+        if(isset($credentials['accessKeyId'])){
+            $accessKeyId = $credentials['accessKeyId'];
+        }
+        if(isset($credentials['secretAccessKey'])){
+            $secretAccessKey = $credentials['secretAccessKey'];
+        }
 
         if (isset($options[SignOptions::TIMESTAMP])) {
             $timestamp = $options[SignOptions::TIMESTAMP];

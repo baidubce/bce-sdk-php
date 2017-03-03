@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the 'License'); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -54,6 +54,7 @@ class HttpHeaders
     const BCE_USER_METADATA_PREFIX = 'x-bce-meta-';
     const BCE_REQUEST_ID = 'x-bce-request-id';
     const BCE_STORAGE_CLASS = 'x-bce-storage-class';
+    const BCE_SESSION_TOKEN = 'x-bce-security-token';
 
     // BOS HTTP Headers
     const BOS_DEBUG_ID = 'x-bce-Bos-debug-id';

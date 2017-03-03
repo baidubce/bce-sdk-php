@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,11 @@ namespace BaiduBce\Exception;
 
 class BceClientException extends BceBaseException
 {
+    /**
+     * Constructs a new BceClientException instance.
+     *
+     * @param string $message the exception message
+     */
     function __construct($message)
     {
         parent::__construct($message);

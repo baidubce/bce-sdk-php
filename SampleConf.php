@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
 * the License. You may obtain a copy of the License at
@@ -20,10 +20,12 @@ define('__BOS_CLIENT_ROOT', dirname(__DIR__));
 $BOS_TEST_CONFIG =
     array(
         'credentials' => array(
-            'ak' => 'your ak',
-            'sk' => 'your sk',
+            'accessKeyId' => 'your ak',
+            'secretAccessKey' => 'your sk',
+            'sessionToken' => 'your session token'
         ),
         'endpoint' => 'host',
+        'stsEndpoint' => 'sts host',
     );
 $STDERR = fopen('php://stderr', 'w+');
 $__handler = new \Monolog\Handler\StreamHandler($STDERR, \Monolog\Logger::DEBUG);

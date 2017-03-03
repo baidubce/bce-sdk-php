@@ -27,8 +27,7 @@
     "monolog/monolog": "Adds support for logging HTTP requests and responses"
   },
   "require-dev": {
-    "monolog/monolog": "~1.4",
-    "phpunit/phpunit": "~4.0"
+    "monolog/monolog": "~1.4"
   },
   "autoload": {
     "psr-0": {
@@ -37,7 +36,7 @@
   },
   "extra": {
     "branch-alias": {
-      "dev-master": "0.8.21-dev"
+      "dev-master": "0.8.22-dev"
     }
   }
 }

@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -21,15 +21,16 @@ namespace BaiduBce\Util;
  * Utilities for parsing and formatting dates.
  *
  * <p>
- * Note that this class doesn't use static methods because of the synchronization issues with SimpleDateFormat. This
- * lets synchronization be done on a per-object level, instead of on a per-class level.
+ * Note that this class doesn't use static methods because of the
+ * synchronization issues with SimpleDateFormat. This lets synchronization be
+ * done on a per-object level, instead of on a per-class level.
  */
 class DateUtils
 {
     /**
      * Alternate ISO 8601 format without fractional seconds
      */
-    const alternateIso8601DateFormat = "Y-m-d\TH:i:s\Z";
+    const ALTERNATE_ISO8601_DATE_FORMAT = "Y-m-d\TH:i:s\Z";
 
     /**
      * @var \DateTimeZone The UTC timezone object.
@@ -45,7 +46,8 @@ class DateUtils
     }
 
     /**
-     * Parses the specified date string as an ISO 8601 date and returns the Date object.
+     * Parses the specified date string as an ISO 8601 date and returns the Date
+     * object.
      *
      * @param $dateString string The date string to parse.
      * @return \DateTime The parsed Date object.
@@ -54,7 +56,7 @@ class DateUtils
     public static function parseAlternateIso8601Date($dateString)
     {
         return \DateTime::createFromFormat(
-            DateUtils::alternateIso8601DateFormat,
+            DateUtils::ALTERNATE_ISO8601_DATE_FORMAT,
             $dateString,
             DateUtils::$UTC_TIMEZONE
         );
@@ -68,7 +70,7 @@ class DateUtils
      */
     public static function formatAlternateIso8601Date($datetime)
     {
-        return $datetime->format(DateUtils::alternateIso8601DateFormat);
+        return $datetime->format(DateUtils::ALTERNATE_ISO8601_DATE_FORMAT);
     }
 
     /**

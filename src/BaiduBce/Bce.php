@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -19,7 +19,7 @@ namespace BaiduBce;
 
 class Bce
 {
-    const SDK_VERSION = '0.8.21';
+    const SDK_VERSION = '0.8.22';
     const DEFAULT_SERVICE_DOMAIN = 'baidubce.com';
     const URL_PREFIX = '/v1';
     const DEFAULT_ENCODING = 'UTF-8';

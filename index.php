@@ -37,5 +37,5 @@ require_once __DIR__.'/src/BaiduBce/Http/HttpMethod.php';
 require_once __DIR__.'/src/BaiduBce/Services/Bos/BosClient.php';
 require_once __DIR__.'/src/BaiduBce/Services/Bos/BosOptions.php';
 require_once __DIR__.'/src/BaiduBce/Services/Bos/CannedAcl.php';
-
-
+//Services/sts
+require_once __DIR__.'/src/BaiduBce/Services/Sts/StsClient.php';

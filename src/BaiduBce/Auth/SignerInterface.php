@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -19,7 +19,19 @@ namespace BaiduBce\Auth;
 
 interface SignerInterface
 {
-    public function sign(
+    /**
+     * Sign the given request with the given set of credentials and returns the
+     * signed authorization string.
+     *
+     * @param $credentials array the credentials to sign the request with.
+     * @param $httpMethod string
+     * @param $path string
+     * @param $headers array
+     * @param $params array
+     * @param $options array the options for signing.
+     * @return string The signed authorization string.
+     */
+     public function sign(
         array $credentials,
         $httpMethod,
         $path,

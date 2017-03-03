@@ -5,6 +5,7 @@
     <testsuites>
         <testsuite name="services">
             <file>test/BaiduBce/Services/Bos/BosClientTest.php</file>
+            <file>test/BaiduBce/Services/Sts/StsClientTest.php</file>
         </testsuite>
     </testsuites>
 </phpunit>

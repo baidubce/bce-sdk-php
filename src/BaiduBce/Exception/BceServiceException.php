@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -34,6 +34,14 @@ class BceServiceException extends BceBaseException
      */
     private $errorCode;
 
+    /**
+     * Constructs a new BceServiceException instance.
+     *
+     * @param string $requestId the request id
+     * @param string $errorCode the error code
+     * @param string $errorMessage the error message
+     * @param string $statusCode the status code
+     */
     function __construct(
         $requestId,
         $errorCode,

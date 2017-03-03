@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2015 Baidu.com, Inc. All Rights Reserved
+* Copyright 2015 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -1545,12 +1545,28 @@ class LssClient extends BceBaseClient
      */
     public function createStream($domain, $options = array())
     {
-        list($config, $app, $publish, $scene) = $this->parseOptions(
+        list($config,
+            $app,
+            $publish,
+            $scene,
+            $recording,
+            $notification,
+            $thumbnail,
+            $thumbnails,
+            $watermarks,
+            $destinationPushUrl
+        ) = $this->parseOptions(
             $options,
             'config',
             'app',
             'publish',
-            'scene');
+            'scene',
+            'recording',
+            'notification',
+            'thumbnail',
+            'thumbnails',
+            'watermarks',
+            'destinationPushUrl');
 
         if (empty($domain)) {
             throw new BceClientException("The parameter domain "
@@ -1568,6 +1584,24 @@ class LssClient extends BceBaseClient
         if ($scene !== null) {
             $body['scene'] = $scene;
         }
+        if ($recording !== null) {
+            $body['recording'] = $recording;
+        }
+        if ($notification !== null) {
+            $body['notification'] = $notification;
+        }
+        if ($thumbnail !== null) {
+            $body['thumbnail'] = $thumbnail;
+        }
+        if ($thumbnails !== null) {
+            $body['thumbnails'] = $thumbnails;
+        }
+        if ($watermarks !== null) {
+            $body['watermarks'] = $watermarks;
+        }
+        if ($destinationPushUrl !== null) {
+            $body['destinationPushUrl'] = $destinationPushUrl;
+        }
 
         return $this->sendRequest(
             HttpMethod::POST,
@@ -1576,6 +1610,46 @@ class LssClient extends BceBaseClient
                 'body' => json_encode($body),
             ),
             "/domain/$domain/stream"
+        );
+    }
+
+    /**
+     * Delete a stream.
+     *
+     * @param $domain string, name of play domain
+     * @param $app string, name of app
+     * @param $stream string, name of stream
+     * @param array $options Supported options:
+     *      {
+     *          config: the optional bce configuration, which will overwrite the
+     *                  default client configuration that was passed in constructor.
+     *      }
+     * @return mixed session detail
+     * @throws BceClientException
+     */
+    public function deleteStream($domain, $app, $stream, $options = array())
+    {
+        list($config) = $this->parseOptions($options, 'config');
+
+        if (empty($domain)) {
+            throw new BceClientException("The parameter domain "
+                . "should NOT be null or empty string");
+        }
+        if (empty($app)) {
+            throw new BceClientException("The parameter app "
+                . "should NOT be null or empty string");
+        }
+        if (empty($stream)) {
+            throw new BceClientException("The parameter stream "
+                . "should NOT be null or empty string");
+        }
+
+        return $this->sendRequest(
+            HttpMethod::DELETE,
+            array(
+                'config' => $config,
+            ),
+            "/domain/$domain/app/$app/stream/$stream"
         );
     }
 

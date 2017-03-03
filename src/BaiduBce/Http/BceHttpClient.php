@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright (c) 2014 Baidu.com, Inc. All Rights Reserved
+* Copyright 2014 Baidu, Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License"); you may not
 * use this file except in compliance with the License. You may obtain a copy of
@@ -159,9 +159,13 @@ class BceHttpClient
             $entityBody = $body;
         }
 
-
+        $credentials = $config[BceClientConfigOptions::CREDENTIALS];
+        // if the request is send through the STS certification
+        if(array_key_exists(BceClientConfigOptions::SESSION_TOKEN, $credentials)) {
+            $headers[HttpHeaders::BCE_SESSION_TOKEN] = $credentials[BceClientConfigOptions::SESSION_TOKEN];
+        }
         $headers[HttpHeaders::AUTHORIZATION] = $signer->sign(
-            $config[BceClientConfigOptions::CREDENTIALS],
+            $credentials,
             $httpMethod,
             $path,
             $headers,
